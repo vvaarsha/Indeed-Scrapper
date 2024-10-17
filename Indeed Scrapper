@@ -1,0 +1,48 @@
+!pip install apify-client
+import csv
+from apify_client import ApifyClient
+
+# Initialize the ApifyClient with your API token
+client = ApifyClient("your apify token")
+
+# Prepare the Actor input
+run_input = {
+    "position": "web developer",
+    "country": "IN",
+    "location": "Chennai",
+    "maxItems": 30,
+    "parseCompanyDetails": True,
+    "saveOnlyUniqueItems": True,
+    "followApplyRedirects": False,
+}
+
+# Run the Actor and wait for it to finish
+run = client.actor("hMvNSpz3JnHgl5jkh").call(run_input=run_input)
+
+# Check if the run has a valid dataset ID
+dataset_id = run.get("defaultDatasetId")
+if dataset_id:
+    # Fetch Actor results from the run's dataset
+    results = client.dataset(dataset_id).iterate_items()
+
+    # Specify the CSV file path
+    csv_file_path = "web_developer_jobs.csv"
+
+    # Write the data to a CSV file
+    with open(csv_file_path, mode='w', newline='', encoding='utf-8') as csv_file:
+        fieldnames = ["position", "company", "location", "salary", "apply_link",]  # Adjust based on the actual fields in the dataset
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+
+        writer.writeheader()  # Write the header row
+        for item in results:
+            writer.writerow({
+                "position": item.get("positionName"),
+                "company": item.get("company"),
+                "location": item.get("location"),
+                "salary": item.get("salary"),
+                "apply_link": item.get("url"),
+            })
+
+    print(f"Results saved to {csv_file_path}")
+else:
+    print("No dataset ID found in the run.")
